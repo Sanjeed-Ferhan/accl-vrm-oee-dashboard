@@ -132,7 +132,7 @@
   <div class="grid g3" style="margin-top:12px">
     <div class="card">
       <h3 id="timeTitle">Where is time going? — 11-Oct</h3>
-      <div class="donut" id="donut"><div class="hole"><b id="donutC">2,880</b><span class="muted" style="font-size:10px">planned min</span></div></div>
+      <div class="donut" id="donut"><div class="hole"><b id="donutC">2,880</b><span class="muted" style="font-size:10px">planned prod. min</span></div></div>
       <div class="legend" id="donutL"></div>
       <p class="muted" style="margin:10px 0 0;font-size:11px" id="timeNote"></p>
     </div>
@@ -256,16 +256,16 @@ const DATA = {
   mtd: {
     basis:'Basis: 01–12 Oct 2026 month-to-date (shifts A–D)',
     kpiTitle:'CURRENT SCENARIO — OEE (OCT 2026 MTD)',
-    kpi:{A:59.2,P:82.6,Q:97.0,OEE:47.5}, targets:{A:90,P:86,Q:97,OEE:75},
+    kpi:{A:79.2,P:82.8,Q:97.0,OEE:63.6}, targets:{A:90,P:86,Q:97,OEE:75},
     timeTitle:'Where is time going? — Oct MTD',
-    time:{planned:35280, avail:20895, down:14385, availPct:59.2, downPct:40.8,
-      note:'Includes 9,000 min planned maintenance; 5,385 min unplanned (NPT). Availability is the #1 loss.'},
+    time:{planned:25560, avail:20255, down:5305, availPct:79.2, downPct:20.8,
+      note:'5,305 min unplanned (NPT); 9,000 min planned downtime excluded from availability.'},
     millsTitle:'OEE by mill — Oct MTD',
     mills:[
-      {n:'VRM-1',v:67.1,A:83.9,P:82.5,Q:97.0,out:27132,target:39212},
-      {n:'VRM-2',v:27.8,A:34.6,P:82.9,Q:97.1,out:17751,target:30314}],
+      {n:'VRM-1',v:67.2,A:83.8,P:82.7,Q:97.0,out:26598,target:38412},
+      {n:'VRM-2',v:56.3,A:69.7,P:83.1,Q:97.1,out:16835,target:29051}],
     factorsTitle:'Find the bottleneck — Oct MTD',
-    factors:[{n:'Availability',v:59.2,t:90},{n:'Performance',v:82.6,t:86},{n:'Quality',v:97.0,t:97}],
+    factors:[{n:'Availability',v:79.2,t:90},{n:'Performance',v:82.8,t:86},{n:'Quality',v:97.0,t:97}],
     lossTitle:'Top production losses — Oct MTD (min, unplanned)',
     losses:[{n:'W01- Cement silo full',v:2225},{n:'O01- Mill Vibration',v:630},{n:'U01- REB Shutdown',v:590},{n:'I01- Rotary Feeder 531 RF503',v:360},{n:'O01- Rotary Feeder 531 RF503',v:300},{n:'I01- Clinker Hopper',v:210}],
     lossNote:'Total unplanned NPT <b>5,385 min</b>. Plus <b>9,000 min</b> planned maintenance (not NPT).',
@@ -287,14 +287,14 @@ const DATA = {
     ],
     shiftTitle:'Shift OEE — Oct MTD',
     shifts:[
-      {n:'Shift A',v:44.7,A:58.5,P:78.7,Q:97.0,Out:13868},
-      {n:'Shift B',v:45.9,A:55.5,P:85.2,Q:97.0,Out:14075},
-      {n:'Shift C',v:51.6,A:63.0,P:84.4,Q:97.1,Out:3896},
-      {n:'Shift D',v:51.6,A:63.6,P:83.7,Q:97.0,Out:13044}],
-    quant:'5,385 min unplanned NPT + 9,000 min planned maintenance. VRM-2 OEE 27.8% vs VRM-1 67.1%.',
-    opp:{ rows:[{mill:'VRM-1',min:2845,cyc:0.45,mt:6322},{mill:'VRM-2',min:2540,cyc:0.285,mt:8912}],
-      totalMin:5385, totalMT:15235, plannedMin:9000, plannedMT:31579,
-      note:'Opportunity loss = NPT min ÷ ideal cycle time (VRM-1 0.45, VRM-2 0.285 min/MT) → <b>~15,235 MT</b> unplanned this month, plus <b>~31,579 MT</b> lost to planned maintenance.' }
+      {n:'Shift A',v:59.5,A:78.0,P:78.7,Q:97.0,Out:13868},
+      {n:'Shift B',v:63.9,A:77.2,P:85.2,Q:97.0,Out:14075},
+      {n:'Shift C',v:68.8,A:84.0,P:84.4,Q:97.1,Out:3896},
+      {n:'Shift D',v:67.1,A:81.9,P:84.4,Q:97.0,Out:11594}],
+    quant:'5,305 min unplanned NPT + 9,000 min planned maintenance (excluded from availability). VRM-2 OEE 56.3% vs VRM-1 67.2%.',
+    opp:{ rows:[{mill:'VRM-1',min:2800,cyc:0.45,mt:6222},{mill:'VRM-2',min:2505,cyc:0.285,mt:8789}],
+      totalMin:5305, totalMT:15011, plannedMin:9000, plannedMT:31579,
+      note:'Opportunity loss = NPT min ÷ ideal cycle time (VRM-1 0.45, VRM-2 0.285 min/MT) → <b>~15,011 MT</b> unplanned this month, plus <b>~31,579 MT</b> lost to planned maintenance.' }
   }
 };
 
