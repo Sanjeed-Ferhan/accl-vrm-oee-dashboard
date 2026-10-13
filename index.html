@@ -85,7 +85,7 @@
   <div class="ribbon">
     <span><b>Reporting</b> 12-Oct-2026 (last day) &amp; 01–12 Oct 2026 (MTD)</span>
     <span><b>Scope</b> VRM-1 &amp; VRM-2 · Shifts A–D</span>
-    <span><b>Targets</b> A 90% · P 95% · Q 99% · OEE 75% (management target)</span>
+    <span><b>Targets</b> A 90% · P 86% · Q 97% · OEE 75% (management target)</span>
     <span><b>Source</b> Production Report + VRM Breakdown</span>
   </div>
 
@@ -108,22 +108,22 @@
     <div class="card kpi">
       <div class="lab">Performance</div>
       <div class="val" id="kP">84.8%</div>
-      <div class="tgt" id="kPt">vs 95% target</div>
-      <div class="vs" id="kPd">▼ 10.2 pts</div>
+      <div class="tgt" id="kPt">vs 86% target</div>
+      <div class="vs up" id="kPd">▲ 3.4 pts</div>
       <div class="bar"><i id="kPb" style="width:84.8%"></i></div>
     </div>
     <div class="card kpi">
       <div class="lab">Quality</div>
       <div class="val" id="kQ">97.1%</div>
-      <div class="tgt" id="kQt">vs 99% target</div>
-      <div class="vs" id="kQd">▼ 1.9 pts</div>
+      <div class="tgt" id="kQt">vs 97% target</div>
+      <div class="vs up" id="kQd">▲ 0.0 pts</div>
       <div class="bar"><i id="kQb" style="width:97.1%"></i></div>
     </div>
     <div class="card kpi">
       <div class="lab">Overall OEE</div>
       <div class="val" id="kO" style="color:var(--red)">57.2%</div>
       <div class="tgt" id="kOt">vs 75% target</div>
-      <div class="vs" id="kOd">▼ 17.8 pts</div>
+      <div class="vs up" id="kOd">▲ 1.7 pts</div>
       <div class="bar"><i id="kOb" style="width:57.2%;background:var(--red)"></i></div>
     </div>
   </div>
@@ -220,7 +220,7 @@ const DATA = {
   day: {
     basis:'Basis: single day — 12-Oct-2026 (shifts A–D)',
     kpiTitle:'CURRENT SCENARIO — OEE (12-OCT-2026)',
-    kpi:{A:88.5,P:89.4,Q:97.0,OEE:76.7}, targets:{A:90,P:95,Q:99,OEE:75},
+    kpi:{A:88.5,P:89.4,Q:97.0,OEE:76.7}, targets:{A:90,P:86,Q:97,OEE:75},
     timeTitle:'Where is time going? — 12-Oct',
     time:{planned:2880, avail:2550, down:330, availPct:88.5, downPct:11.5,
       note:'330 min unplanned (NPT); no planned downtime booked. Mostly mill vibration (290 min).'},
@@ -229,7 +229,7 @@ const DATA = {
       {n:'VRM-1',v:74.3,A:88.2,P:86.9,Q:97.0,out:2453,target:3201},
       {n:'VRM-2',v:79.1,A:88.9,P:91.8,Q:97.0,out:4122,target:5052}],
     factorsTitle:'Find the bottleneck — 12-Oct',
-    factors:[{n:'Availability',v:88.5,t:90},{n:'Performance',v:89.4,t:95},{n:'Quality',v:97.0,t:99}],
+    factors:[{n:'Availability',v:88.5,t:90},{n:'Performance',v:89.4,t:86},{n:'Quality',v:97.0,t:97}],
     lossTitle:'Top production losses — 12-Oct (min)',
     losses:[{n:'O01- Mill Vibration',v:290},{n:'O01- 531RF085',v:40}],
     lossNote:'Total NPT <b>330 min</b> — 88% from mill vibration.',
@@ -256,7 +256,7 @@ const DATA = {
   mtd: {
     basis:'Basis: 01–12 Oct 2026 month-to-date (shifts A–D)',
     kpiTitle:'CURRENT SCENARIO — OEE (OCT 2026 MTD)',
-    kpi:{A:59.2,P:82.6,Q:97.0,OEE:47.5}, targets:{A:90,P:95,Q:99,OEE:75},
+    kpi:{A:59.2,P:82.6,Q:97.0,OEE:47.5}, targets:{A:90,P:86,Q:97,OEE:75},
     timeTitle:'Where is time going? — Oct MTD',
     time:{planned:35280, avail:20895, down:14385, availPct:59.2, downPct:40.8,
       note:'Includes 9,000 min planned maintenance; 5,385 min unplanned (NPT). Availability is the #1 loss.'},
@@ -265,7 +265,7 @@ const DATA = {
       {n:'VRM-1',v:67.1,A:83.9,P:82.5,Q:97.0,out:27132,target:39212},
       {n:'VRM-2',v:27.8,A:34.6,P:82.9,Q:97.1,out:17751,target:30314}],
     factorsTitle:'Find the bottleneck — Oct MTD',
-    factors:[{n:'Availability',v:59.2,t:90},{n:'Performance',v:82.6,t:95},{n:'Quality',v:97.0,t:99}],
+    factors:[{n:'Availability',v:59.2,t:90},{n:'Performance',v:82.6,t:86},{n:'Quality',v:97.0,t:97}],
     lossTitle:'Top production losses — Oct MTD (min, unplanned)',
     losses:[{n:'W01- Cement silo full',v:2225},{n:'O01- Mill Vibration',v:630},{n:'U01- REB Shutdown',v:590},{n:'I01- Rotary Feeder 531 RF503',v:360},{n:'O01- Rotary Feeder 531 RF503',v:300},{n:'I01- Clinker Hopper',v:210}],
     lossNote:'Total unplanned NPT <b>5,385 min</b>. Plus <b>9,000 min</b> planned maintenance (not NPT).',
@@ -334,7 +334,7 @@ function factorBoard(arr){
   const rows = arr.map(s=>{
     const gap = s.t - s.v; if(gap>worstGap){worstGap=gap; worst=s;}
     const c = gap<=2 ? '#2e7d32' : (gap<=10 ? '#f9a825' : '#c62828');
-    const gapTxt = gap>=0 ? ('gap −'+gap.toFixed(1)+' pts') : ('ahead +'+(-gap).toFixed(1)+' pts');
+    const gapTxt = Math.abs(gap)<0.05 ? 'on target' : (gap>0 ? ('gap −'+gap.toFixed(1)+' pts') : ('ahead +'+(-gap).toFixed(1)+' pts'));
     return `<div style="margin:9px 0">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
         <span style="font-weight:700;font-size:12.5px">${s.n}</span>
@@ -409,7 +409,9 @@ function renderPeriod(key){
   const ogap = p.targets.OEE - p.kpi.OEE;
   onee.style.color = ogap<=0 ? 'var(--green)' : 'var(--red)';
   document.getElementById('kOt').textContent = 'vs '+p.targets.OEE+'% target';
-  document.getElementById('kOd').textContent = '▼ '+Math.abs(ogap).toFixed(1)+' pts';
+  const oel = document.getElementById('kOd');
+  oel.textContent = (ogap<=0?'▲ ':'▼ ')+Math.abs(ogap).toFixed(1)+' pts';
+  oel.className = 'vs '+(ogap<=0?'up':'down');
   document.getElementById('kOb').style.width = Math.max(0,Math.min(100,p.kpi.OEE))+'%';
   document.getElementById('kOb').style.background = ogap<=0 ? 'var(--green)' : 'var(--red)';
   // time
