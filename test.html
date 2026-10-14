@@ -1,7 +1,12 @@
 ﻿<!doctype html><meta charset="utf-8"><title>t</title>
 <div id="o">start</div>
 <script>
-var u="https://docs.google.com/spreadsheets/d/1NzcGrUHk7N4FSVGpAp9ZQ_H7TbpmX92YTtaJSnMx8Hg/export?format=csv&gid=0";
+function t(name,u){ return fetch(u,{cache:"no-store"}).then(function(r){return r.text();}).then(function(x){return name+":OK len="+x.length;}).catch(function(e){return name+":ERR "+e.message;}); }
+var urls={
+ gviz:"https://docs.google.com/spreadsheets/d/1NzcGrUHk7N4FSVGpAp9ZQ_H7TbpmX92YTtaJSnMx8Hg/gviz/tq?tqx=out:csv&gid=0",
+ exp:"https://docs.google.com/spreadsheets/d/1NzcGrUHk7N4FSVGpAp9ZQ_H7TbpmX92YTtaJSnMx8Hg/export?format=csv&gid=0",
+ gh:"https://api.github.com/zen"
+};
 document.getElementById("o").textContent="fetching";
-fetch(u,{cache:"no-store"}).then(function(r){return r.text();}).then(function(t){document.getElementById("o").textContent="OK len="+t.length+" head="+t.slice(0,30);}).catch(function(e){document.getElementById("o").textContent="ERR "+e.message;});
+Promise.all(Object.keys(urls).map(function(k){return t(k,urls[k]);})).then(function(a){document.getElementById("o").textContent=a.join(" || ");});
 </script>
