@@ -101,6 +101,8 @@
     <div><label>From date</label><br><input type="date" id="fFrom"/></div>
     <div><label>To date</label><br><input type="date" id="fTo"/></div>
     <div style="flex:1;min-width:180px"><label>Search</label><br><input type="text" id="fSearch" placeholder="problem / machine / root cause…" style="width:100%"/></div>
+    <div><label>Google API key (optional, for real links)</label><br><input type="password" id="fApiKey" placeholder="AIza..." style="width:150px"/></div>
+    <div style="align-self:flex-end"><button id="btnSaveKey" class="secondary" onclick="saveApiKey()">Save key</button></div>
     <div style="align-self:flex-end"><button id="btnRefresh" class="secondary" onclick="loadLive()">↻ Refresh</button></div>
     <div style="align-self:flex-end"><button onclick="exportCsv()">⬇ Export CSV</button></div>
     <span class="hint" id="statusHint">Loading…</span>
@@ -500,8 +502,88 @@ function exportCsv(){
 }
 
 /* ---------- live load ---------- */
+function getApiKey(){ return (localStorage.getItem("rca_api_key")||"").trim(); }
+function saveApiKey(){
+  const v = (document.getElementById("fApiKey").value||"").trim();
+  if(v){ localStorage.setItem("rca_api_key", v); alert("API key saved. Click Refresh to load real links."); }
+  else { localStorage.removeItem("rca_api_key"); alert("API key cleared."); }
+}
+function mapSheetApiToRows(data){
+  // data = Sheets API v4 spreadsheets.get with includeGridData=true
+  const out = [];
+  if(!data || !data.sheets) return out;
+  data.sheets.forEach(function(sheet){
+    const title = (sheet.properties && sheet.properties.title) || "";
+    const sbu = title || "(blank)";
+    const grid = (sheet.data && sheet.data[0]) || {};
+    const rows = grid.rowData || [];
+    if(!rows.length) return;
+    // header row
+    const headerCells = (rows[0].values || []);
+    const header = headerCells.map(function(c){ return String((c && (c.formattedValue||c.userEnteredValue && c.userEnteredValue.stringValue))||"").trim().toLowerCase(); });
+    const find = function(cands){ for(const c of cands){ const i = header.findIndex(function(h){ return h.includes(c); }); if(i>=0) return i; } return -1; };
+    const iSbu = find(["sbu"]);
+    const iDate = find(["date"]);
+    const iSection = find(["section"]);
+    const iMachine = find(["line/machine","machine","line"]);
+    const iLoss = find(["loss time","loss"]);
+    const iProblem = find(["problem"]);
+    const iRoot = find(["root"]);
+    const iLink = find(["rca file","file link","link","url"]);
+    const iSupport = find(["sup"]);
+    const iRef = find(["rca ref","ref date","ref"]);
+    for(let r=1;r<rows.length;r++){
+      const cells = rows[r].values || [];
+      const get = function(i){ if(i<0) return ""; const c = cells[i]; if(!c) return ""; return c.formattedValue != null ? String(c.formattedValue) : (c.userEnteredValue && c.userEnteredValue.stringValue) ? c.userEnteredValue.stringValue : ""; };
+      const getHyperlink = function(i){ if(i<0) return ""; const c = cells[i]; if(!c) return ""; return c.hyperlink || ""; };
+      const sbuVal = (iSbu>=0 ? get(iSbu).trim() : "") || sbu;
+      const problem = (iProblem>=0 ? get(iProblem).trim() : "");
+      const machine = (iMachine>=0 ? get(iMachine).trim() : "");
+      const loss = (function(){ const v = iLoss>=0 ? get(iLoss) : "0"; const n = parseFloat(String(v).replace(/,/g,"")); return isNaN(n)?0:n; })();
+      if(!problem && loss===0 && !machine) continue;
+      const linkCell = iLink>=0 ? getHyperlink(iLink) : "";
+      const linkText = iLink>=0 ? get(iLink).trim() : "";
+      const link = linkCell || (linkText && /^https?:\/\//i.test(linkText) ? linkText : linkText);
+      out.push({
+        sbu: sbuVal,
+        date: (function(){ const s=get(iDate).trim(); const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(m) return m[1].padStart(2,"0")+"/"+m[2].padStart(2,"0")+"/"+m[3]; return s; })(),
+        section: (iSection>=0 ? get(iSection).trim() : ""),
+        machine: machine,
+        loss: loss,
+        problem: problem,
+        root: (iRoot>=0 ? get(iRoot).trim() : ""),
+        link: link,
+        support: (iSupport>=0 ? get(iSupport).trim() : ""),
+        refdate: (function(){ const s=(iRef>=0?get(iRef):"").trim(); const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(m) return m[1].padStart(2,"0")+"/"+m[2].padStart(2,"0")+"/"+m[3]; return s; })()
+      });
+    }
+  });
+  return out;
+}
 function loadLive(){
   const hint = document.getElementById("statusHint");
+  hint.textContent = "Loading live data…";
+  const key = getApiKey();
+  if(key){
+    const url = "https://sheets.googleapis.com/v4/spreadsheets/" + SHEET_ID + "?includeGridData=true&key=" + encodeURIComponent(key);
+    fetch(url, {cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+      .then(function(data){
+        const parsed = mapSheetApiToRows(data);
+        if(!parsed || !parsed.length) throw new Error("no data from API");
+        ALL = parsed;
+        populateFilters();
+        render();
+        hint.textContent = "Live (API) · " + new Date().toLocaleString() + " · " + ALL.length + " records (real links enabled)";
+      }).catch(function(e){
+        // fallback to gviz
+        loadLiveGviz(hint);
+      });
+  } else {
+    loadLiveGviz(hint);
+  }
+}
+function loadLiveGviz(hint){
+  if(!hint) hint = document.getElementById("statusHint");
   hint.textContent = "Loading live data…";
   Promise.all(TABS.map(function(sbu){
     const url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(sbu);
@@ -524,9 +606,10 @@ function loadLive(){
 
 /* ---------- init ---------- */
 document.addEventListener("DOMContentLoaded", ()=>{
+  const k = getApiKey();
+  if(k){ const el = document.getElementById("fApiKey"); if(el) el.value = k; }
   populateFilters();
   render();
-
   // sort header clicks
   document.querySelectorAll("th[data-key]").forEach(th=>{
     th.addEventListener("click", ()=>{
