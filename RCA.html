@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>RCA — Root Cause Analysis (SBU wise)</title>
+<style>
+  :root{
+    --teal:#0f5c56; --teal2:#0b7a6f; --green:#2e7d32; --red:#c62828; --amber:#f9a825;
+    --ink:#12211f; --muted:#5d6b69; --line:#e2e8e7; --bg:#eef2f1; --card:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Arial,Helvetica,sans-serif;font-size:13px}
+  .wrap{max-width:1400px;margin:0 auto;padding:14px 16px 40px}
+  header.top{background:linear-gradient(90deg,#0f5c56,#0b7a6f);color:#fff;border-radius:10px 10px 0 0;padding:16px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+  header.top .brand{display:flex;gap:12px;align-items:center}
+  .logo{width:44px;height:44px;border:2px solid #bff3ea;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#bff3ea;font-size:20px}
+  header.top h1{margin:0;font-size:22px;letter-spacing:.5px;font-weight:800}
+  header.top .sub{font-size:12px;opacity:.9;margin-top:2px;letter-spacing:1px;text-transform:uppercase}
+  .pill{background:#0a3f3a;border-radius:8px;padding:8px 12px;text-align:right;font-size:11px;line-height:1.5}
+  .pill b{font-size:13px;display:block;color:#bff3ea}
+  .ribbon{background:#fff;border:1px solid var(--line);border-top:0;padding:10px 18px;display:flex;gap:18px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);letter-spacing:.4px}
+  .ribbon b{color:var(--teal)}
+  .toolbar{background:#fff;border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;padding:12px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .toolbar label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .toolbar select,.toolbar input{border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--ink);background:#fff}
+  .toolbar button{border:1px solid var(--teal);background:var(--teal);color:#fff;font-weight:700;font-size:12px;padding:7px 16px;border-radius:8px;cursor:pointer}
+  .toolbar button.secondary{background:#fff;color:var(--teal)}
+  .toolbar .hint{margin-left:auto;font-size:11px;color:var(--muted)}
+  h2.sec{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--teal);margin:18px 0 8px;border-bottom:2px solid #cfe3df;padding-bottom:5px}
+  .grid{display:grid;gap:12px}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1.2fr 1fr 1fr}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .card h3{margin:0 0 8px;font-size:11.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .kpi .lab{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+  .kpi .val{font-size:30px;font-weight:800;line-height:1.05;margin:2px 0}
+  .kpi .tgt{font-size:11px;color:var(--muted)}
+  .tag{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;letter-spacing:.4px}
+  .t-red{background:#fdecea;color:var(--red)} .t-amber{background:#fff5e0;color:#b26a00} .t-green{background:#e7f4e8;color:var(--green)} .t-blue{background:#e8f0fe;color:#1a56db}
+  .barlist .bl{display:grid;grid-template-columns:150px 1fr 60px;gap:8px;align-items:center;margin:6px 0;font-size:11.5px}
+  .barlist .bl .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .track{background:#f0f3f3;border-radius:5px;height:14px;overflow:hidden;display:block}
+  .track > i{display:block;height:100%}
+  .bl .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);cursor:pointer;user-select:none;white-space:nowrap}
+  th:hover{color:var(--teal)}
+  th .sort{font-size:9px;margin-left:4px;opacity:.5}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .muted{color:var(--muted)}
+  .cell-trunc{max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
+  .status-pending{color:var(--red);font-weight:700}
+  .status-closed{color:var(--green);font-weight:700}
+  .detail{background:#fbfdfc;border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:12px}
+  .detail h4{margin:0 0 6px;font-size:13px;color:var(--teal)}
+  .detail .row{margin:6px 0;font-size:12.5px;line-height:1.5}
+  .detail .lbl{font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px}
+  .detail a{color:var(--teal2);font-weight:700}
+  .table-wrap{overflow:auto;max-height:620px;border:1px solid var(--line);border-radius:10px}
+  .table-wrap table{min-width:1100px}
+  .table-wrap thead th{position:sticky;top:0;background:#f3f7f6;z-index:2}
+  footer{margin-top:18px;font-size:10.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .empty{padding:18px;text-align:center;color:var(--muted)}
+  @media print{body{background:#fff} .card{break-inside:avoid} .toolbar button{cursor:default}}
+  @media (max-width:900px){.g4,.g3,.g2{grid-template-columns:1fr 1fr}.barlist .bl{grid-template-columns:110px 1fr 44px}}
+  @media (max-width:600px){.g4,.g3,.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo">R</div>
+      <div>
+        <div class="sub">Akij · RCA — Root Cause Analysis</div>
+        <h1>SBU wise RCA Check</h1>
+        <div class="sub" style="text-transform:none;letter-spacing:.3px">Review every loss, its root cause, owner and closure status — by SBU.</div>
+      </div>
+    </div>
+    <div class="pill">IMPROVE&nbsp;|&nbsp;DIGITIZE&nbsp;|&nbsp;PREDICT&nbsp;|&nbsp;OPTIMIZE<br>RCA register</div>
+  </header>
+
+  <div class="ribbon">
+    <span id="ribbonReporting"><b>Source</b> AR_A3_Problem_Solving · Google Sheet</span>
+    <span><b>Scope</b> All SBUs (filter by SBU)</span>
+    <span><b>Columns</b> SBU · Date · Section · Line/Machine · Loss Time · Problem · Root Cause · RCA Link · Support · RCA Ref Date</span>
+    <span><b>Status</b> Pending = no RCA Ref Date · Closed = RCA Ref Date present</span>
+  </div>
+
+  <div class="toolbar">
+    <div><label>SBU</label><br><select id="fSbu"><option value="">All SBUs</option></select></div>
+    <div><label>Support required</label><br><select id="fSupport"><option value="">All</option></select></div>
+    <div><label>Status</label><br><select id="fStatus"><option value="">All</option><option value="pending">Pending</option><option value="closed">Closed</option></select></div>
+    <div><label>From date</label><br><input type="date" id="fFrom"/></div>
+    <div><label>To date</label><br><input type="date" id="fTo"/></div>
+    <div style="flex:1;min-width:180px"><label>Search</label><br><input type="text" id="fSearch" placeholder="problem / machine / root cause…" style="width:100%"/></div>
+    <div style="align-self:flex-end"><button id="btnRefresh" class="secondary" onclick="loadLive()">↻ Refresh</button></div>
+    <div style="align-self:flex-end"><button onclick="exportCsv()">⬇ Export CSV</button></div>
+    <span class="hint" id="statusHint">Loading…</span>
+  </div>
+
+  <!-- KPI CARDS -->
+  <h2 class="sec">SUMMARY — filtered view</h2>
+  <div class="grid g4">
+    <div class="card kpi"><div class="lab">RCA records</div><div class="val" id="kCount">0</div><div class="tgt" id="kCountT">in filtered view</div></div>
+    <div class="card kpi"><div class="lab">Total loss time</div><div class="val" id="kLoss">0</div><div class="tgt" id="kLossT">minutes</div></div>
+    <div class="card kpi"><div class="lab">Pending RCA</div><div class="val" id="kPending" style="color:var(--red)">0</div><div class="tgt">no RCA Ref Date</div></div>
+    <div class="card kpi"><div class="lab">Closed RCA</div><div class="val" id="kClosed" style="color:var(--green)">0</div><div class="tgt">RCA Ref Date present</div></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card">
+      <h3>Loss time by SBU (min)</h3>
+      <div class="barlist" id="sbuBars"></div>
+      <p class="muted" style="margin:8px 0 0;font-size:11px" id="sbuNote"></p>
+    </div>
+    <div class="card">
+      <h3>RCA count by SBU</h3>
+      <div class="barlist" id="sbuCountBars"></div>
+      <p class="muted" style="margin:8px 0 0;font-size:11px" id="sbuCountNote"></p>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card">
+      <h3>Support required — breakdown</h3>
+      <div class="barlist" id="supportBars"></div>
+    </div>
+    <div class="card">
+      <h3>Section — breakdown</h3>
+      <div class="barlist" id="sectionBars"></div>
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div id="detailWrap" style="display:none"></div>
+
+  <!-- TABLE -->
+  <h2 class="sec">RCA REGISTER — given format</h2>
+  <div class="card" style="padding:0">
+    <div class="table-wrap">
+      <table id="rcaTable">
+        <thead>
+          <tr>
+            <th data-key="sbu">SBU<span class="sort">↕</span></th>
+            <th data-key="date">Date<span class="sort">↕</span></th>
+            <th data-key="section">Section<span class="sort">↕</span></th>
+            <th data-key="machine">Line/Machine Name<span class="sort">↕</span></th>
+            <th data-key="loss" class="num">Loss Time (Min)<span class="sort">↕</span></th>
+            <th>Problem Statement</th>
+            <th>Root Cause</th>
+            <th>RCA File Link</th>
+            <th data-key="support">Support Required<span class="sort">↕</span></th>
+            <th data-key="refdate">RCA Ref Date<span class="sort">↕</span></th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="rcaBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyMsg" style="display:none">No RCA records match the current filters.</div>
+  </div>
+
+  <footer>
+    <span>Source: Google Sheet "AR_A3_Problem_Solving" · RCA register · live fetch when online</span>
+    <span>SBU wise view · Pending = no RCA Ref Date · Closed = RCA Ref Date present</span>
+  </footer>
+</div>
+
+<script>
+/* ---------- data ---------- */
+const SHEET_ID = "1E6hHjCkgqrPuHiiKTl58dxYcUrY7HKTDL21kVSDnH3M";
+const TABS = ["MRML","ACCL","AEFML","AIL","ALEL","APFIL"];
+
+// fallback embedded data (current sheet snapshot)
+const FALLBACK_ROWS = [{"sbu":"MRML","date":"10/16/2026","section":"Aromatic Hulling","machine":"DRPG Motor","loss":300,"problem":"Operational failure of the Aromatic Hulling DRPG Motor due to severe internal mechanical damage.","root":"Catastrophic failure of the motor bearing, induced by persistent vibration and heavy mechanical loading, created continuous radial misalignment and excessive stress concentration on the rotor shaft, ultimately resulting in shaft fracture.","link":"Link","support":"Maintenance","refdate":""},{"sbu":"MRML","date":"11/01/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":2160,"problem":"Hulling Stoppage in Electricity Peak Hours (5:00 PM – 11:00 PM) Due to Monthly Sales Orders Below Capacity (Unavailable Order)","root":"Monthly sales orders are below installed capacity, so hulling is deliberately kept off in electricity peak hours (5:00 PM – 11:00 PM). Sales planning is not matched to capacity, and without a separate loss code this order-shortfall stop is recorded as breakdown.","link":"Link","support":"Sales","refdate":""},{"sbu":"MRML","date":"11/01/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":1239,"problem":"Reduction of Line Changeover Cleaning Time – Boil Line 01 (Steam ↔ Boil Item Changeover)","root":"No standardized, time-bound changeover cleaning method (task split, manpower, tools, acceptance criteria). Machines are cleaned manually and sequentially, and steam–boil mixing risk drives over-cleaning, extending changeover from 2 hrs to 5–8 hrs.","link":"Link","support":"Production","refdate":""},{"sbu":"MRML","date":"11/02/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":2720,"problem":"Hulling Stoppage in Electricity Peak Hours (5:00 PM – 11:00 PM) Due to Monthly Sales Orders Below Capacity (Unavailable Order)","root":"Monthly sales orders are below installed capacity, so hulling is deliberately kept off in electricity peak hours (5:00 PM – 11:00 PM). Sales planning is not matched to capacity, and without a separate loss code this order-shortfall stop is recorded as breakdown.","link":"Link","support":"Sales","refdate":"11/01/2026"},{"sbu":"MRML","date":"11/02/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":1124,"problem":"Reduction of Line Changeover Cleaning Time – Boil Line 01 (Steam ↔ Boil Item Changeover)","root":"Need review time-bound changeover cleaning method (task split, manpower, tools, acceptance criteria). Machines are cleaned manually and sequentially, and steam–boil mixing risk drives over-cleaning, extending changeover from 2 hrs to 5–8 hrs.","link":"Link","support":"Production","refdate":"11/01/2026"},{"sbu":"MRML","date":"11/02/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":120,"problem":"Factory-wide Power Outage Due to REB Shutdown – Utility (Electricity) Breakdown","root":"No power continuity plan for REB shutdowns, so every section stops.","link":"Link","support":"","refdate":""},{"sbu":"MRML","date":"11/03/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":2640,"problem":"Hulling Stoppage in Electricity Peak Hours (5:00 PM – 11:00 PM) Due to Monthly Sales Orders Below Capacity (Unavailable Order)","root":"Monthly sales orders are below installed capacity, so hulling is deliberately kept off in electricity peak hours (5:00 PM – 11:00 PM). Sales planning is not matched to capacity, and without a separate loss code this order-shortfall stop is recorded as breakdown.","link":"Link","support":"Sales","refdate":"11/01/2026"},{"sbu":"MRML","date":"11/03/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":1970,"problem":"Reduction of Line Changeover Cleaning Time – Boil Line 01 (Steam ↔ Boil Item Changeover)","root":"Need review time-bound changeover cleaning method (task split, manpower, tools, acceptance criteria). Machines are cleaned manually and sequentially, and steam–boil mixing risk drives over-cleaning, extending changeover from 2 hrs to 5–8 hrs.","link":"Link","support":"Production","refdate":"11/01/2026"},{"sbu":"MRML","date":"11/04/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":3000,"problem":"Hulling Stoppage in Electricity Peak Hours (5:00 PM – 11:00 PM) Due to Monthly Sales Orders Below Capacity (Unavailable Order)","root":"Monthly sales orders are below installed capacity, so hulling is deliberately kept off in electricity peak hours (5:00 PM – 11:00 PM). Sales planning is not matched to capacity, and without a separate loss code this order-shortfall stop is recorded as breakdown.","link":"Link","support":"Sales","refdate":"11/01/2026"},{"sbu":"MRML","date":"11/04/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":410,"problem":"Reduction of Line Changeover Cleaning Time – Boil Line 01 (Steam ↔ Boil Item Changeover)","root":"Need review time-bound changeover cleaning method (task split, manpower, tools, acceptance criteria). Machines are cleaned manually and sequentially, and steam–boil mixing risk drives over-cleaning, extending changeover from 2 hrs to 5–8 hrs.","link":"Link","support":"Production","refdate":"11/01/2026"},{"sbu":"MRML","date":"11/04/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":60,"problem":"Factory-wide Power Outage Due to REB Shutdown – Utility (Electricity) Breakdown","root":"No power continuity plan for REB shutdowns, so every section stops.","link":"Link","support":"","refdate":"11/02/2026"},{"sbu":"MRML","date":"11/05/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":2940,"problem":"Hulling Stoppage in Electricity Peak Hours (5:00 PM – 11:00 PM) Due to Monthly Sales Orders Below Capacity (Unavailable Order)","root":"Monthly sales orders are below installed capacity, so hulling is deliberately kept off in electricity peak hours (5:00 PM – 11:00 PM). Sales planning is not matched to capacity, and without a separate loss code this order-shortfall stop is recorded as breakdown.","link":"Link","support":"Sales","refdate":"11/01/2026"},{"sbu":"MRML","date":"11/05/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":521,"problem":"Reduction of Line Changeover Cleaning Time – Boil Line 01 (Steam ↔ Boil Item Changeover)","root":"Need review time-bound changeover cleaning method (task split, manpower, tools, acceptance criteria). Machines are cleaned manually and sequentially, and steam–boil mixing risk drives over-cleaning, extending changeover from 2 hrs to 5–8 hrs.","link":"Link","support":"Production","refdate":"11/01/2026"},{"sbu":"MRML","date":"11/08/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":2040,"problem":"Hulling Stoppage in Electricity Peak Hours (5:00 PM – 11:00 PM) Due to Monthly Sales Orders Below Capacity (Unavailable Order)","root":"Monthly sales orders are below installed capacity, so hulling is deliberately kept off in electricity peak hours (5:00 PM – 11:00 PM). Sales planning is not matched to capacity, and without a separate loss code this order-shortfall stop is recorded as breakdown.","link":"Link","support":"Sales","refdate":"11/01/2026"},{"sbu":"MRML","date":"11/08/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":1920,"problem":"Reduction of Line Changeover Cleaning Time – Boil Line 01 (Steam ↔ Boil Item Changeover)","root":"Need review time-bound changeover cleaning method (task split, manpower, tools, acceptance criteria). Machines are cleaned manually and sequentially, and steam–boil mixing risk drives over-cleaning, extending changeover from 2 hrs to 5–8 hrs.","link":"Link","support":"Production","refdate":"11/01/2026"},{"sbu":"MRML","date":"11/09/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":1080,"problem":"Hulling Stoppage in Electricity Peak Hours (5:00 PM – 11:00 PM) Due to Monthly Sales Orders Below Capacity (Unavailable Order)","root":"Monthly sales orders are below installed capacity, so hulling is deliberately kept off in electricity peak hours (5:00 PM – 11:00 PM). Sales planning is not matched to capacity, and without a separate loss code this order-shortfall stop is recorded as breakdown.","link":"Link","support":"Sales","refdate":"11/01/2026"},{"sbu":"MRML","date":"11/09/2026","section":"Hulling & Sorting","machine":"Hulling and Sorting","loss":1975,"problem":"Reduction of Line Changeover Cleaning Time – Boil Line 01 (Steam ↔ Boil Item Changeover)","root":"Need review time-bound changeover cleaning method (task split, manpower, tools, acceptance criteria). Machines are cleaned manually and sequentially, and steam–boil mixing risk drives over-cleaning, extending changeover from 2 hrs to 5–8 hrs.","link":"Link","support":"Production","refdate":"11/01/2026"},{"sbu":"ACCL","date":"11/01/2026","section":"Production","machine":"VRM-2","loss":100,"problem":"VRM experienced 100 minutes of Non-Productive Time (NPT) due to an electricity supply interruption (Utility).","root":"Grid power supply interruption (Grid Shutdown)","link":"Link","support":"","refdate":""},{"sbu":"ACCL","date":"11/02/2026","section":"Production","machine":"VRM-1","loss":75,"problem":"Mill vibration has been observed as Others downtime","root":"Not yet confirmed","link":"","support":"Production","refdate":""},{"sbu":"ACCL","date":"11/02/2026","section":"Production","machine":"VRM-2","loss":120,"problem":"VRM experienced 120 minutes of Non-Productive Time (NPT) due to an electricity supply interruption (Utility).","root":"Grid power supply interruption (Grid Shutdown)","link":"Link","support":"","refdate":""},{"sbu":"ACCL","date":"11/03/2026","section":"Production","machine":"VRM-1","loss":225,"problem":"Mill vibration has been observed as others downtime)","root":"Not yet confirmed","link":"","support":"Production","refdate":""},{"sbu":"ACCL","date":"11/03/2026","section":"Production","machine":"VRM-1","loss":50,"problem":"bucket elevator 514 BE-1 issue observed as others downtime","root":"514 BE-1 shows BSS alarm,due to misalignment(offside)","link":"Link","support":"","refdate":""},{"sbu":"ACCL","date":"11/06/2026","section":"Production","machine":"VRM-2","loss":45,"problem":"Mill vibration has been observed as others downtime)","root":"Not yet confirmed","link":"","support":"Production","refdate":""},{"sbu":"ACCL","date":"11/07/2026","section":"Production","machine":"VRM-2","loss":35,"problem":"Mill vibration has been observed as others downtime)","root":"Not yet confirmed","link":"","support":"Production","refdate":""},{"sbu":"ACCL","date":"11/09/2026","section":"Production","machine":"VRM-2","loss":205,"problem":"VRM-2 had REB shutdown issue(Utility).","root":"Grid power supply interruption (Grid Shutdown)","link":"Link","support":"","refdate":""},{"sbu":"ACCL","date":"11/09/2026","section":"Production","machine":"VRM-2","loss":135,"problem":"Belt Conveyor 511BC550 faced overload alarm, then airslide jam. Recorded as Others downtime","root":"","link":"","support":"Rabbani","refdate":""},{"sbu":"ACCL","date":"11/09/2026","section":"Production","machine":"VRM-2","loss":10,"problem":"FLS Gear Box had a 531LQ14501 gear lubrication unit issue. Recorded as Others downtime","root":"oil temperature high due water circulation pump trip,pump trips due insufficient water suction,","link":"","support":"Firoz","refdate":""},{"sbu":"ACCL","date":"11/09/2026","section":"Production","machine":"VRM-2","loss":40,"problem":"FLS Gear Box had a gearbox oil temperature high issue.Recorded as others downtime","root":"oil temperature high due water circulation pump trip,pump trips due insufficient water suction,","link":"","support":"Rabbani","refdate":""},{"sbu":"ACCL","date":"11/10/2026","section":"Production","machine":"VRM-2","loss":195,"problem":"VRM-2 faced a mechanical breakdown named\"MILL\". Reason also recorded as \"MILL\"","root":"hot air line expantion joint repair.fresh air suction due to canvas air leakage which may impact mill temperature.","link":"","support":"Mintu","refdate":""},{"sbu":"ACCL","date":"11/10/2026","section":"Production","machine":"VRM-2","loss":45,"problem":"531LQ14501 gear lubrication unit had a issue. Recorded as others downtime","root":"oil temperature high due water circulation pump trip,pump trips due insufficient water suction,","link":"","support":"Firoz","refdate":"tank cleaning,sucker fish disturbing"},{"sbu":"ACCL","date":"11/10/2026","section":"Production","machine":"VRM-2","loss":30,"problem":"FLS Gear Box had a 531LQ14501 gear lubrication unit issue. Recorded as Others downtime","root":"oil temperature high due water circulation pump trip,pump trips due insufficient water suction,","link":"","support":"Mintu","refdate":"tank cleaning,sucker fish disturbing"},{"sbu":"AEFML","date":"11/01/2026","section":"Milling","machine":"","loss":15,"problem":"Plan shifter Sleeve came off","root":"Sleeve detachment caused by a missing inspection point in the routine PM checklist - locking and fastening not verified during preventive maintenance.","link":"Link","support":"","refdate":""},{"sbu":"AEFML","date":"11/02/2026","section":"Milling","machine":"","loss":52,"problem":"Plan shifter sieve leakage","root":"Primary cause mechanisms : foreign small-part entry / impact; continuous product-to-sieve abrasion; excessive product loading / overfeeding; and abrasive friction from bran. Confirm the specific cause of each breakdown by inspecting the sieve damage pattern, checking upstream machine parts, and reviewing feed-rate / operating records. Do not assume one mechanism explains every event.","link":"Link","support":"","refdate":""},{"sbu":"AEFML","date":"11/03/2026","section":"Milling","machine":"","loss":60,"problem":"Plan shifter sieve leakage","root":"Primary cause mechanisms : foreign small-part entry / impact; continuous product-to-sieve abrasion; excessive product loading / overfeeding; and abrasive friction from bran. Confirm the specific cause of each breakdown by inspecting the sieve damage pattern, checking upstream machine parts, and reviewing feed-rate / operating records. Do not assume one mechanism explains every event.","link":"Link","support":"","refdate":""},{"sbu":"AIL","date":"11/02/2026","section":"SMS","machine":"","loss":90,"problem":"Metal quantity low & Heat time taken longer due to A-Grade, PNS scrap nill & bad quality of HMS scrap","root":"Scrap quality is not as per described ( PNS, A grade). Under PNS the actual quality of scrap is lower that HMS","link":"Link","support":"","refdate":""},{"sbu":"AIL","date":"11/03/2026","section":"SMS","machine":"","loss":25,"problem":"Metal quantity low & Heat time taken longer due to 3 number vibrator cable changing","root":"Life time end of the cable and brunt","link":"Link","support":"","refdate":""},{"sbu":"AIL","date":"11/04/2026","section":"SMS","machine":"","loss":100,"problem":"5 Number crucible off due to earth leakage (M)","root":"mechanical inspected the reaasons, no fault found ... now the solution is to re lining the furnace.","link":"Link","support":"","refdate":""},{"sbu":"AIL","date":"11/04/2026","section":"SMS","machine":"","loss":160,"problem":"5 Number crucible off due to earth leakage (M)","root":"","link":"","support":"","refdate":""},{"sbu":"AIL","date":"11/04/2026","section":"SMS","machine":"","loss":60,"problem":"Crucible No. 03 – Repeated furnace water temperature high trips throughout the night, resulting in reduced metal quantity and increased heat time. (E)","root":"Water sensor failed/ burnt","link":"Link","support":"","refdate":""},{"sbu":"AIL","date":"11/04/2026","section":"SMS","machine":"","loss":25,"problem":"03 no Crucible was off due to water sensor checking purpose (E)","root":"","link":"","support":"","refdate":""},{"sbu":"AIL","date":"11/04/2026","section":"SMS","machine":"","loss":30,"problem":"BH-403 full metal back from CCM due to Ladel temperature drop (for Gas pressure nill)","root":"ladle was not properly pre-heated as Gas pressure nill","link":"Link","support":"","refdate":""},{"sbu":"AIL","date":"11/08/2026","section":"SMS","machine":"","loss":20,"problem":"REB power off","root":"","link":"","support":"","refdate":""},{"sbu":"AIL","date":"11/08/2026","section":"SMS","machine":"","loss":40,"problem":"Heat tapping of BH-448 & BH-449 delayed","root":"due to zero gas pressure in the CCM line and two ladle re-furnacing operations","link":"Link","support":"","refdate":""},{"sbu":"AIL","date":"11/08/2026","section":"SMS","machine":"","loss":20,"problem":"BH-452 heat tapping delayed","root":"due to repeated tripping of Crucible No. 05 caused by high furnace water temperature","link":"Link","support":"","refdate":""},{"sbu":"AIL","date":"11/08/2026","section":"SMS","machine":"","loss":60,"problem":"Grab crane Remained off","root":"Pressure valve failure","link":"Link","support":"","refdate":""},{"sbu":"AIL","date":"11/08/2026","section":"SMS","machine":"","loss":50,"problem":"Metal quantity low & Heat time taken longer","root":"Scrap quality is not as per described ( PNS, A grade). Under PNS the actual quality of scrap is lower that HMS","link":"Link","support":"","refdate":"11/02/2026"},{"sbu":"AIL","date":"11/09/2026","section":"SMS","machine":"","loss":40,"problem":"Metal holding occurred twice due to the Stand No. 01","root":"dummy bar bolt joint coming loose during casting","link":"","support":"","refdate":""},{"sbu":"AIL","date":"11/09/2026","section":"SMS","machine":"","loss":75,"problem":"Grab crane Remained off","root":"Pressure valve failure","link":"Link","support":"","refdate":"11/08/2026"},{"sbu":"APFIL","date":"11/01/2026","section":"Loom(19)","machine":"","loss":302,"problem":"Shuttle body found decayed,causing machine malfunction.","root":"Deterioration of the shuttle body due to prolonged use and wear and tear.","link":"Link","support":"","refdate":""},{"sbu":"APFIL","date":"11/03/2026","section":"Loom","machine":"","loss":220,"problem":"Shuttle body found decayed,causing machine malfunction.","root":"Deterioration of the shuttle body due to prolonged use and wear and tear.","link":"Link","support":"","refdate":""},{"sbu":"APFIL","date":"11/03/2026","section":"Loom","machine":"","loss":4380,"problem":"Bobbin Shortage","root":"The previous day's REB supply problem in Tapeline disrupted bobbin production, and there was not enough bobbin stock to cover the gap.","link":"Link","support":"","refdate":""},{"sbu":"APFIL","date":"11/08/2026","section":"Loom(3,4,5)","machine":"","loss":540,"problem":"Bobbin Shortage","root":"The previous day's REB supply problem in Tapeline disrupted bobbin production, and there was not enough bobbin stock to cover the gap.","link":"Link","support":"","refdate":""},{"sbu":"APFIL","date":"11/08/2026","section":"Loom","machine":"","loss":30,"problem":"Lever Decyed","root":"Excess friction or impact from misalignment / lack of lubrication","link":"Link","support":"","refdate":""},{"sbu":"APFIL","date":"11/09/2026","section":"Tapeline","machine":"","loss":245,"problem":"Insufficient Electric Load","root":"Electric demand exceeds the available supply capacity, together with voltage instability.","link":"Link","support":"Power plant","refdate":"11/09/2026"},{"sbu":"APFIL","date":"11/09/2026","section":"Loom 02(1, 2, 3, 4, 5, 6, 10, 15, 18, 19, 19, 20, 22, 24, 25, 27, 28, 29, 31, 32, 33, 34, 35, 36, 37, 38)","machine":"","loss":3160,"problem":"Bobbin Shortage","root":"The previous day's REB supply problem in Tapeline disrupted bobbin production, and there was not enough bobbin stock to cover the gap.","link":"Link","support":"Power plant","refdate":"11/09/2026"}];
+
+let ALL = FALLBACK_ROWS.slice();
+let sortKey = "date";
+let sortDir = -1; // -1 desc
+let selectedIdx = null;
+
+/* ---------- helpers ---------- */
+function parseCSV(text){
+  var rows=[], row=[], cur="", i=0, inQ=false;
+  text = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+  while(i<text.length){
+    var ch=text[i];
+    if(inQ){
+      if(ch==='"'){ if(text[i+1]==='"'){cur+='"';i+=2;continue;} inQ=false;i++;continue; }
+      cur+=ch;i++;continue;
+    }
+    if(ch==='"'){ inQ=true;i++;continue; }
+    if(ch===','){ row.push(cur);cur="";i++;continue; }
+    if(ch==="\n"){ row.push(cur);rows.push(row);row=[];cur="";i++;continue; }
+    cur+=ch;i++;
+  }
+  row.push(cur); rows.push(row);
+  return rows;
+}
+function num(v){ if(v==null) return 0; var x=parseFloat(String(v).replace(/,/g,"")); return isNaN(x)?0:x; }
+function normDate(s){
+  if(!s) return "";
+  s=String(s).trim();
+  // Date(2026,9,16) style from gviz not here; CSV has M/D/YYYY
+  var m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){ return m[1].padStart(2,"0")+"/"+m[2].padStart(2,"0")+"/"+m[3]; }
+  return s;
+}
+function dateKey(s){
+  // returns YYYY-MM-DD for comparison
+  if(!s) return "";
+  var m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){ return m[3]+"-"+m[1].padStart(2,"0")+"-"+m[2].padStart(2,"0"); }
+  return s;
+}
+function fmtMin(n){ return Number(n||0).toLocaleString(); }
+
+function mapCsvToRows(text, tabName){
+  const rows = parseCSV(text);
+  if(!rows.length) return null;
+  const header = rows[0].map(h=>String(h||"").trim().toLowerCase());
+  const idx = (name) => header.findIndex(h=>h===name || h.replace(/\s+/g,"")===name.replace(/\s+/g,""));
+  // flexible matching
+  const find = (cands) => {
+    for(const c of cands){
+      const i = header.findIndex(h=>h.includes(c));
+      if(i>=0) return i;
+    }
+    return -1;
+  };
+  const iSbu = find(["sbu"]);
+  const iDate = find(["date"]);
+  const iSection = find(["section"]);
+  const iMachine = find(["line/machine","machine","line"]);
+  const iLoss = find(["loss time","loss"]);
+  const iProblem = find(["problem"]);
+  const iRoot = find(["root"]);
+  const iLink = find(["rca file","file link","link"]);
+  const iSupport = find(["sup"]);
+  const iRef = find(["rca ref","ref date"]);
+  const out=[];
+  for(let r=1;r<rows.length;r++){
+    const row=rows[r];
+    if(!row || row.length===0) continue;
+    const sbu = (iSbu>=0 ? (row[iSbu]||"").trim() : "") || (tabName||"");
+    const problem = (iProblem>=0 ? (row[iProblem]||"").trim() : "");
+    const machine = (iMachine>=0 ? (row[iMachine]||"").trim() : "");
+    // skip blank rows
+    const loss = num(iLoss>=0 ? row[iLoss] : 0);
+    if(!problem && loss===0 && !machine) continue;
+    if(!sbu && !problem && !machine && !loss) continue;
+    out.push({
+      sbu: sbu || "(blank)",
+      date: normDate(row[iDate]),
+      section: (iSection>=0 ? (row[iSection]||"").trim() : ""),
+      machine: machine,
+      loss: loss,
+      problem: problem,
+      root: (iRoot>=0 ? (row[iRoot]||"").trim() : ""),
+      link: (iLink>=0 ? (row[iLink]||"").trim() : ""),
+      support: (iSupport>=0 ? (row[iSupport]||"").trim() : ""),
+      refdate: normDate(iRef>=0 ? row[iRef] : "")
+    });
+  }
+  return out;
+}
+
+/* ---------- state/filters ---------- */
+function distinct(arr, key){ return [...new Set(arr.map(x=>x[key]).filter(v=>v&&v!=="(blank)"))].sort(); }
+
+function populateFilters(){
+  const sbus = distinct(ALL,"sbu");
+  const supports = distinct(ALL,"support");
+  const fSbu = document.getElementById("fSbu");
+  const curSbu = fSbu.value;
+  fSbu.innerHTML = '<option value="">All SBUs</option>' + sbus.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  fSbu.value = sbus.includes(curSbu)? curSbu : "";
+  const fSup = document.getElementById("fSupport");
+  const curSup = fSup.value;
+  fSup.innerHTML = '<option value="">All</option>' + supports.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  fSup.value = supports.includes(curSup)? curSup : "";
+}
+
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function isPending(r){ return !r.refdate; }
+
+function filteredRows(){
+  const sbu = document.getElementById("fSbu").value;
+  const sup = document.getElementById("fSupport").value;
+  const status = document.getElementById("fStatus").value;
+  const from = document.getElementById("fFrom").value;
+  const to = document.getElementById("fTo").value;
+  const q = document.getElementById("fSearch").value.trim().toLowerCase();
+  return ALL.filter(r=>{
+    if(sbu && r.sbu !== sbu) return false;
+    if(sup && r.support !== sup) return false;
+    if(status==="pending" && !isPending(r)) return false;
+    if(status==="closed" && isPending(r)) return false;
+    const dk = dateKey(r.date);
+    if(from && dk < from) return false;
+    if(to && dk > to) return false;
+    if(q){
+      const hay = (r.sbu+" "+r.section+" "+r.machine+" "+r.problem+" "+r.root+" "+r.support).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+/* ---------- sorting ---------- */
+function sortRows(rows){
+  const k = sortKey;
+  const d = sortDir;
+  const get = (r)=>{
+    if(k==="sbu") return r.sbu;
+    if(k==="date") return dateKey(r.date);
+    if(k==="section") return r.section;
+    if(k==="machine") return r.machine;
+    if(k==="loss") return r.loss;
+    if(k==="support") return r.support;
+    if(k==="refdate") return dateKey(r.refdate);
+    return "";
+  };
+  return rows.slice().sort((a,b)=>{
+    const va=get(a), vb=get(b);
+    if(typeof va==="number" && typeof vb==="number") return d*(va-vb);
+    return d*String(va).localeCompare(String(vb));
+  });
+}
+
+/* ---------- render bars ---------- */
+function barList(id, arr, color){
+  const max = Math.max(1, ...arr.map(a=>a.v));
+  document.getElementById(id).innerHTML = arr.map(a=>`<div class="bl">
+    <span class="nm" title="${esc(a.n)}">${esc(a.n)}</span>
+    <span class="track"><i style="width:${(a.v/max*100).toFixed(1)}%;background:${color||"#0b7a6f"}"></i></span>
+    <span class="v">${Number(a.v).toLocaleString()}</span></div>`).join('') || '<div class="muted" style="padding:6px 0">No data</div>';
+}
+
+function aggBy(rows, keyFn, valFn){
+  const m={};
+  rows.forEach(r=>{ const k=keyFn(r); m[k]=(m[k]||0)+valFn(r); });
+  return Object.entries(m).map(([n,v])=>({n,v})).sort((a,b)=>b.v-a.v);
+}
+
+/* ---------- render ---------- */
+function render(){
+  const rows = filteredRows();
+  const sorted = sortRows(rows);
+
+  // KPIs
+  document.getElementById("kCount").textContent = rows.length.toLocaleString();
+  const totalLoss = rows.reduce((s,r)=>s+r.loss,0);
+  document.getElementById("kLoss").textContent = totalLoss.toLocaleString();
+  const pending = rows.filter(isPending).length;
+  const closed = rows.length - pending;
+  document.getElementById("kPending").textContent = pending.toLocaleString();
+  document.getElementById("kClosed").textContent = closed.toLocaleString();
+
+  // SBU bars (loss time) — always over filtered rows but group by sbu
+  const sbuLoss = aggBy(rows, r=>r.sbu, r=>r.loss);
+  barList("sbuBars", sbuLoss, "#0b7a6f");
+  document.getElementById("sbuNote").innerHTML = rows.length? `Total loss in view: <b>${totalLoss.toLocaleString()} min</b> across ${rows.length} RCA(s).` : "No records in view.";
+
+  const sbuCount = aggBy(rows, r=>r.sbu, r=>1);
+  // count not sum loss; rebuild
+  const cntMap={};
+  rows.forEach(r=>{ cntMap[r.sbu]=(cntMap[r.sbu]||0)+1; });
+  const cntArr = Object.entries(cntMap).map(([n,v])=>({n,v})).sort((a,b)=>b.v-a.v);
+  barList("sbuCountBars", cntArr, "#2e7d32");
+  document.getElementById("sbuCountNote").innerHTML = rows.length? `${distinct(rows,"sbu").length} distinct SBU(s) in view.` : "No records in view.";
+
+  // support
+  const supMap={};
+  rows.forEach(r=>{ const k=r.support||"(none)"; supMap[k]=(supMap[k]||0)+1; });
+  const supArr = Object.entries(supMap).map(([n,v])=>({n,v})).sort((a,b)=>b.v-a.v);
+  barList("supportBars", supArr, "#1a56db");
+
+  // section
+  const secMap={};
+  rows.forEach(r=>{ const k=r.section||"(none)"; secMap[k]=(secMap[k]||0)+1; });
+  const secArr = Object.entries(secMap).map(([n,v])=>({n,v})).sort((a,b)=>b.v-a.v);
+  barList("sectionBars", secArr, "#f9a825");
+
+  // table
+  const tbody = document.getElementById("rcaBody");
+  tbody.innerHTML = sorted.map((r, i)=>{
+    const globalIdx = ALL.indexOf(r);
+    const statusCls = isPending(r) ? "status-pending" : "status-closed";
+    const statusTxt = isPending(r) ? "Pending" : "Closed";
+    const ref = r.refdate || "—";
+    let linkHtml;
+    if (r.link && /^https?:\/\//i.test(r.link)) {
+      linkHtml = `<a href="${esc(r.link)}" target="_blank" rel="noopener">Link</a>`;
+    } else if (r.link && r.link.trim().toLowerCase() === "link") {
+      const q = encodeURIComponent((r.sbu||"") + " " + (r.date||"") + " " + (r.problem||"").slice(0,80));
+      linkHtml = `<a href="https://drive.google.com/drive/search?q=${q}" target="_blank" rel="noopener" title="Search Google Drive for this RCA file (URL not exposed by sheet export)">Link</a>`;
+    } else {
+      linkHtml = esc(r.link||"—");
+    }
+    return `<tr data-idx="${globalIdx}" style="cursor:pointer">
+      <td><b>${esc(r.sbu)}</b></td>
+      <td>${esc(r.date)}</td>
+      <td>${esc(r.section)}</td>
+      <td>${esc(r.machine)}</td>
+      <td class="num"><b>${fmtMin(r.loss)}</b></td>
+      <td><span class="cell-trunc" title="${esc(r.problem)}">${esc(r.problem)}</span></td>
+      <td><span class="cell-trunc" title="${esc(r.root)}">${esc(r.root)}</span></td>
+      <td>${linkHtml}</td>
+      <td>${r.support? `<span class="tag t-blue">${esc(r.support)}</span>` : '<span class="muted">—</span>'}</td>
+      <td>${esc(ref)}</td>
+      <td class="${statusCls}">${statusTxt}</td>
+    </tr>`;
+  }).join("");
+
+  // row click -> detail
+  tbody.querySelectorAll("tr").forEach(tr=>{
+    tr.addEventListener("click", ()=>showDetail(parseInt(tr.dataset.idx,10)));
+  });
+
+  // empty
+  document.getElementById("emptyMsg").style.display = rows.length? "none":"block";
+
+  // sort indicators
+  document.querySelectorAll("th[data-key]").forEach(th=>{
+    const ind = th.querySelector(".sort");
+    if(ind){
+      if(th.dataset.key===sortKey) ind.textContent = sortDir>0? "▲":"▼";
+      else ind.textContent = "↕";
+    }
+  });
+}
+
+function showDetail(idx){
+  const r = ALL[idx];
+  if(!r) return;
+  selectedIdx = idx;
+  const statusTxt = isPending(r) ? "Pending (no RCA Ref Date)" : "Closed — referenced on "+r.refdate;
+  let linkHtml2;
+  if (r.link && /^https?:\/\//i.test(r.link)) {
+    linkHtml2 = `<a href="${esc(r.link)}" target="_blank" rel="noopener">${esc(r.link)}</a>`;
+  } else if (r.link && r.link.trim().toLowerCase() === "link") {
+    const q = encodeURIComponent((r.sbu||"") + " " + (r.date||"") + " " + (r.problem||"").slice(0,80));
+    linkHtml2 = `<a href="https://drive.google.com/drive/search?q=${q}" target="_blank" rel="noopener" title="Search Google Drive for this RCA file (URL not exposed by sheet export)">Link</a>`;
+  } else {
+    linkHtml2 = esc(r.link||"—");
+  }
+  const linkHtml = linkHtml2;
+  const wrap = document.getElementById("detailWrap");
+  wrap.style.display = "block";
+  wrap.innerHTML = `<div class="detail">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h4>RCA Detail — ${esc(r.sbu)} · ${esc(r.date)}</h4>
+      <button onclick="document.getElementById('detailWrap').style.display='none'" style="border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px">Close ✕</button>
+    </div>
+    <div class="grid g2" style="margin-top:6px">
+      <div>
+        <div class="row"><span class="lbl">SBU</span>${esc(r.sbu)}</div>
+        <div class="row"><span class="lbl">Date</span>${esc(r.date)}</div>
+        <div class="row"><span class="lbl">Section</span>${esc(r.section)}</div>
+        <div class="row"><span class="lbl">Line/Machine Name</span>${esc(r.machine)}</div>
+        <div class="row"><span class="lbl">Loss Time (Min)</span><b>${fmtMin(r.loss)}</b> min (${(r.loss/60).toFixed(1)} hrs)</div>
+      </div>
+      <div>
+        <div class="row"><span class="lbl">RCA File Link</span>${linkHtml}</div>
+        <div class="row"><span class="lbl">Support Required</span>${r.support? esc(r.support) : "—"}</div>
+        <div class="row"><span class="lbl">RCA Ref Date</span>${r.refdate? esc(r.refdate) : "—"}</div>
+        <div class="row"><span class="lbl">Status</span><span class="${isPending(r)?"status-pending":"status-closed"}">${statusTxt}</span></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px"><span class="lbl">Problem Statement</span>${esc(r.problem)}</div>
+    <div class="row"><span class="lbl">Root Cause</span>${esc(r.root)}</div>
+  </div>`;
+  wrap.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+/* ---------- export ---------- */
+function exportCsv(){
+  const rows = filteredRows();
+  const header = ["SBU","Date","Section","Line/Machine Name","Loss Time (Min)","Problem Statement","Root Cause","RCA File Link","Support Required","RCA Ref Date","Status"];
+  const lines = [header.join(",")];
+  rows.forEach(r=>{
+    const vals = [r.sbu,r.date,r.section,r.machine,r.loss,r.problem,r.root,r.link,r.support,r.refdate, isPending(r)?"Pending":"Closed"];
+    lines.push(vals.map(v=>`"${String(v||"").replace(/"/g,'""')}"`).join(","));
+  });
+  const blob = new Blob([lines.join("\n")], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "RCA_export.csv"; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- live load ---------- */
+function loadLive(){
+  const hint = document.getElementById("statusHint");
+  hint.textContent = "Loading live data…";
+  Promise.all(TABS.map(function(sbu){
+    const url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(sbu);
+    return fetch(url, {cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status+" "+sbu); return r.text(); })
+      .then(function(text){ return mapCsvToRows(text, sbu); }).catch(function(){ return []; });
+  })).then(function(results){
+    const parsed = results.reduce(function(a,b){ return a.concat(b); }, []);
+    if(!parsed || !parsed.length) throw new Error("no data");
+    ALL = parsed;
+    populateFilters();
+    render();
+    hint.textContent = "Live · " + new Date().toLocaleString() + " · " + ALL.length + " records (" + TABS.length + " SBUs)";
+  }).catch(function(e){
+    if(!ALL.length) ALL = FALLBACK_ROWS.slice();
+    populateFilters();
+    render();
+    hint.textContent = "Live unavailable ("+e.message+") — showing snapshot";
+  });
+}
+
+/* ---------- init ---------- */
+document.addEventListener("DOMContentLoaded", ()=>{
+  populateFilters();
+  render();
+
+  // sort header clicks
+  document.querySelectorAll("th[data-key]").forEach(th=>{
+    th.addEventListener("click", ()=>{
+      const k = th.dataset.key;
+      if(sortKey===k) sortDir = -sortDir;
+      else { sortKey=k; sortDir = (k==="loss")? -1 : 1; }
+      render();
+    });
+  });
+
+  // filter change handlers
+  ["fSbu","fSupport","fStatus","fFrom","fTo"].forEach(id=>{
+    document.getElementById(id).addEventListener("change", render);
+  });
+  document.getElementById("fSearch").addEventListener("input", render);
+
+  loadLive();
+});
+</script>
+</body>
+</html>
